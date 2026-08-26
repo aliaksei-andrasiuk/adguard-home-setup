@@ -32,7 +32,7 @@ Samsung TV
 ----------
 Set IP Settings -> Enter manually:
    IP address:   ${TV_IP}
-   Subnet mask:  255.255.255.0
+   Subnet mask:  ${LAN_NETMASK:-255.255.255.0}
    Gateway:      ${ROUTER_IP}
 
 Set DNS Setting -> Enter manually:
