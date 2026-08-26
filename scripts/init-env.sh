@@ -26,18 +26,25 @@ fi
 python3 - "$TARGET" "$DEFAULT_IFACE" "$DEFAULT_IP" "$DEFAULT_GW" "$DEFAULT_MAC" <<'PY'
 from pathlib import Path
 import sys
+
 p = Path(sys.argv[1])
 iface, ip, gw, mac = sys.argv[2:]
-text = p.read_text()
-repls = {
-    'SERVER_INTERFACE=enp3s0': f'SERVER_INTERFACE={iface or "enp3s0"}',
-    'SERVER_IP=192.168.0.216': f'SERVER_IP={ip or "192.168.0.216"}',
-    'ROUTER_IP=192.168.0.1': f'ROUTER_IP={gw or "192.168.0.1"}',
-    'SERVER_MAC=': f'SERVER_MAC={mac}',
+values = {
+    "SERVER_INTERFACE": iface,
+    "SERVER_IP": ip,
+    "ROUTER_IP": gw,
+    "SERVER_MAC": mac,
 }
-for old, new in repls.items():
-    text = text.replace(old, new)
-p.write_text(text)
+
+lines = []
+for line in p.read_text().splitlines():
+    if "=" in line and not line.lstrip().startswith("#"):
+        key = line.split("=", 1)[0]
+        if values.get(key):
+            line = f"{key}={values[key]}"
+    lines.append(line)
+
+p.write_text("\n".join(lines) + "\n")
 PY
 
 echo "Created $TARGET with detected server network values where possible."
