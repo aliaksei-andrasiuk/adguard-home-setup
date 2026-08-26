@@ -24,13 +24,13 @@ local machine only
 
 ## Environment variables
 
-The reusable configuration lives in `.env`:
+The reusable configuration lives in `.env`. `.env.example` contains neutral example values:
 
 ```dotenv
-SERVER_IP=192.168.0.216
-SERVER_INTERFACE=enp3s0
+SERVER_IP=192.168.1.10
+SERVER_INTERFACE=enp1s0
 SERVER_MAC=
-ROUTER_IP=192.168.0.1
+ROUTER_IP=192.168.1.1
 LAN_NETMASK=255.255.255.0
 
 ADGUARD_IMAGE=adguard/adguardhome:latest
@@ -39,7 +39,7 @@ ADGUARD_WEB_PORT=80
 ADGUARD_DNS_PORT=53
 ADGUARD_LANGUAGE=en
 
-TV_IP=192.168.0.71
+TV_IP=192.168.1.50
 TV_MAC=
 ```
 
@@ -61,7 +61,7 @@ bash scripts/init-env.sh
 nano .env
 ```
 
-Fill any remaining values, for example the TV MAC address.
+Fill any remaining values, for example the TV IP/MAC address.
 
 Encrypt the environment with a passphrase:
 
