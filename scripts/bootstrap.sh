@@ -63,6 +63,7 @@ if ! command -v docker >/dev/null 2>&1; then
   sudo apt-get update
   sudo apt-get install -y docker.io
 fi
+sudo systemctl enable --now docker >/dev/null 2>&1 || true
 
 if ! sudo docker compose version >/dev/null 2>&1; then
   log "Installing Docker Compose"
@@ -85,11 +86,22 @@ sudo docker compose --env-file "$ENV_FILE" -f "$ROOT_DIR/compose.yaml" pull
 sudo docker compose --env-file "$ENV_FILE" -f "$ROOT_DIR/compose.yaml" up -d
 
 configured=false
-if [[ -s "$DATA_DIR/conf/AdGuardHome.yaml" ]] && curl -fsS --max-time 2 "http://${SERVER_IP}:${ADGUARD_WEB_PORT}/" >/dev/null 2>&1; then
+if [[ -s "$DATA_DIR/conf/AdGuardHome.yaml" ]]; then
   configured=true
 fi
 
-if [[ "$configured" != true ]]; then
+if [[ "$configured" == true ]]; then
+  log "Existing AdGuard Home configuration detected; leaving it unchanged"
+  ready=false
+  for _ in {1..30}; do
+    if curl -fsS --max-time 2 "http://${SERVER_IP}:${ADGUARD_WEB_PORT}/" >/dev/null 2>&1; then
+      ready=true
+      break
+    fi
+    sleep 1
+  done
+  [[ "$ready" == true ]] || die "Existing configuration was found, but the web UI did not become available. Check: sudo docker logs adguardhome"
+else
   log "Waiting for AdGuard Home first-run API"
   ready=false
   for _ in {1..30}; do
@@ -156,8 +168,6 @@ PY
     sleep 1
   done
   [[ "$ready" == true ]] || die "AdGuard was configured but the final web UI did not become available. Check container logs."
-else
-  log "Existing AdGuard Home configuration detected; leaving it unchanged"
 fi
 
 log "Verification"
