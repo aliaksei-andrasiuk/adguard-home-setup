@@ -117,7 +117,7 @@ if [[ "$configured" != true ]]; then
     break
   done
 
-  PAYLOAD="$({ ADMIN_USERNAME="$ADMIN_USERNAME" ADMIN_PASSWORD="$ADMIN_PASSWORD" python3 - <<'PY'
+  PAYLOAD="$(ADMIN_USERNAME="$ADMIN_USERNAME" ADMIN_PASSWORD="$ADMIN_PASSWORD" python3 - <<'PY'
 import json, os
 print(json.dumps({
     "web": {"ip": os.environ["SERVER_IP"], "port": int(os.environ["ADGUARD_WEB_PORT"])},
@@ -127,10 +127,12 @@ print(json.dumps({
     "language": os.environ.get("ADGUARD_LANGUAGE", "en"),
 }))
 PY
-  })"
+)"
 
   log "Applying initial AdGuard Home configuration"
-  HTTP_CODE="$(printf '%s' "$PAYLOAD" | curl -sS -o /tmp/adguard-install-response.$$ -w '%{http_code}' \
+  RESPONSE_FILE="$(mktemp)"
+  trap 'rm -f "$RESPONSE_FILE"' EXIT
+  HTTP_CODE="$(printf '%s' "$PAYLOAD" | curl -sS -o "$RESPONSE_FILE" -w '%{http_code}' \
     -H 'Content-Type: application/json' \
     --data-binary @- \
     "http://${SERVER_IP}:${SETUP_PORT}/control/install/configure" || true)"
@@ -138,11 +140,11 @@ PY
 
   if [[ "$HTTP_CODE" != "200" ]]; then
     echo "AdGuard install API returned HTTP $HTTP_CODE:" >&2
-    cat /tmp/adguard-install-response.$$ >&2 || true
-    rm -f /tmp/adguard-install-response.$$
+    cat "$RESPONSE_FILE" >&2 || true
     exit 1
   fi
-  rm -f /tmp/adguard-install-response.$$
+  rm -f "$RESPONSE_FILE"
+  trap - EXIT
 
   log "Waiting for final web UI"
   ready=false
